@@ -2,6 +2,7 @@
 import requests
 import json
 from pathlib import Path
+from datetime import datetime, timezone
 
 url = "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,relative_humidity_2m,wind_speed_10m"
 
@@ -12,10 +13,15 @@ try:
     data = response.json()
 
     # Extract current weather measurements
-    new_reading = data["current"]
+    new_reading = data["current"].copy()
+
+    # Record the actual extraction timestamp
+    new_reading["extracted_at"] = datetime.now(timezone.utc).isoformat()
+
 
     # Define the file path
-    file_path = Path("../data/raw/weather.json")
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    file_path = BASE_DIR / "data/raw/weather.json"  
 
     # Ensure the directory exists
     file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -24,7 +30,7 @@ try:
     if file_path.exists():
 
         # Read existing weather data
-        with file_path.open("r") as f:
+        with file_path.open("r", encoding="utf-8") as f:
             json_data = json.load(f)
 
         # Convert the original dictionary into a list
@@ -46,7 +52,7 @@ try:
     existing_data.append(new_reading)
 
     # Save all readings to the JSON file
-    with file_path.open("w") as f:
+    with file_path.open("w", encoding="utf-8") as f:
         json.dump(existing_data, f, indent=4)
 
     print(f"Weather data successfully saved to {file_path}")
