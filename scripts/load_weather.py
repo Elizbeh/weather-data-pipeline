@@ -1,18 +1,42 @@
 
 import sqlite3
 import json
+import logging
 from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(
+            BASE_DIR / "logs/pipeline.log",
+            encoding="utf-8"
+        ),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 db_path = BASE_DIR / "data/weather.db"
 json_path = BASE_DIR / "data/processed/weather_clean.json"
 
-with json_path.open("r", encoding="utf-8") as file:
-    readings = json.load(file)
-
-connection = sqlite3.connect(db_path)
+connection = None
 
 try:
+    logger.info("Starting data loading...")
+
+    with json_path.open("r", encoding="utf-8") as file:
+        readings = json.load(file)
+
+    logger.info("Read %d readings from processed JSON.", len(readings))
+
+    connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -52,18 +76,28 @@ try:
         for reading in readings
     ])
 
+    inserted = cursor.rowcount
+    skipped = len(readings) - inserted
+
     connection.commit()
 
     total = cursor.execute(
         "SELECT COUNT(*) FROM weather_observations"
     ).fetchone()[0]
 
-    print(f"Processed {len(readings)} readings.")
-    print(f"Total observations in database: {total}")
+    logger.info("Processed: %d readings.", len(readings))
+    logger.info("New records inserted: %d.", inserted)
+    logger.info("Duplicate records skipped: %d.", skipped)
+    logger.info("Total observations in database: %d.", total)
+    logger.info("Data loading completed successfully.")
 
 except Exception:
-    connection.rollback()
+    if connection is not None:
+        connection.rollback()
+
+    logger.exception("Data loading failed.")
     raise
 
 finally:
-    connection.close()
+    if connection is not None:
+        connection.close()

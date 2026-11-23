@@ -1,21 +1,50 @@
 
 from pathlib import Path
 import json
+import logging
 from datetime import datetime, timezone
 import hashlib
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(
+            BASE_DIR / "logs/pipeline.log",
+            encoding="utf-8"
+        ),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+
 file_path = BASE_DIR / "data/raw/weather.json"
 transformed_file_path = BASE_DIR / "data/processed/weather_clean.json"
 
 transformed_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-with file_path.open("r", encoding="utf-8") as f:
-    readings = json.load(f)
+logger.info("Starting weather data transformation...")
 
+try:
+    with file_path.open("r", encoding="utf-8") as f:
+        readings = json.load(f)
+
+except (OSError, json.JSONDecodeError):
+    logger.exception("Failed to read raw weather data.")
+    raise
+
+logger.info("Read %d raw weather readings.", len(readings))
+
+            
 transformed_data = []
+
+invalid_count = 0
 
 for index, reading in enumerate(readings):
     
@@ -51,9 +80,18 @@ for index, reading in enumerate(readings):
         transformed_data.append(new_reading)
 
     else:
-        print("Invalid weather reading skipped:", reading)
+        invalid_count += 1
+        logger.warning("Invalid weather reading skipped: %s", reading)
 
-with transformed_file_path.open("w", encoding="utf-8") as file:
-    json.dump(transformed_data, file, indent=4)
+try:
+    with transformed_file_path.open("w", encoding="utf-8") as file:
+        json.dump(transformed_data, file, indent=4)
 
-print(f"Successfully saved {len(transformed_data)} valid readings.")
+except OSError:
+    logger.exception("Failed to save transformed weather data.")
+    raise
+
+logger.info("Valid readings: %d", len(transformed_data))
+logger.info("Invalid readings skipped: %d", invalid_count)
+logger.info("Transformed data saved to %s", transformed_file_path)
+logger.info("Weather data transformation completed successfully.")
