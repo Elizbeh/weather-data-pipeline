@@ -19,8 +19,5 @@ with sqlite3.connect(database_file) as connection:
         cursor = connection.execute(query)
         
         print("\nQuery result:")
-        print([column[0] for column in cursor])
-        
-        
         for row in cursor.fetchall():
             print(row)

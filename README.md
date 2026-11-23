@@ -6,9 +6,9 @@ A Python-based Data Engineering project that extracts weather data from the Open
 
 This project demonstrates the fundamentals of building an ETL (Extract, Transform, Load) pipeline using Python.
 
-The pipeline retrieves current weather information for Paris, France, stores raw API responses in JSON format, transforms and validates the collected readings, and loads them into a SQLite database.
+The pipeline retrieves current weather information for Paris, France, stores raw API responses in JSON format, transforms and validates collected readings, and loads them into a SQLite database.
 
-It also implements incremental data loading to preserve historical observations and prevent duplicate records.
+It implements incremental data loading to preserve historical observations and prevent duplicate records. It also includes logging, database-level data quality checks, and SQL queries for weather data analysis.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ SQLite Database
 (data/weather.db)
       |
       v
-SQL Analysis
+SQL Data Quality Checks & Analysis
 (sql/analysis.sql)
 ```
 
@@ -47,7 +47,8 @@ SQL Analysis
 - **Requests** – HTTP requests to the Open-Meteo API.
 - **JSON** – raw and processed data storage.
 - **SQLite** – structured storage of historical weather observations.
-- **SQL** – querying and analysing weather data.
+- **SQL** – data quality checks, aggregation and analysis.
+- **Logging** – pipeline execution monitoring and error tracking.
 - **Pathlib** – file and directory management.
 - **Hashlib (SHA-256)** – generating unique identifiers for source records.
 - **Git & GitHub** – version control and source code management.
@@ -107,15 +108,36 @@ Validation rules include:
 - Inserts new observations without deleting existing historical data.
 - Allows the loader to be executed repeatedly without duplicating previously loaded records.
 
-### 7. SQL Analysis
+### 7. Logging and Pipeline Monitoring
+
+- Implements Python's built-in `logging` module across the extraction, transformation and loading scripts.
+- Records pipeline execution events and processing information.
+- Logs successful operations, processed record counts and database loading results.
+- Captures errors and exception tracebacks to support troubleshooting.
+- Writes logs to both the terminal and a persistent log file.
+
+### 8. SQL Data Quality Checks
+
+Implements SQL queries to monitor data quality at the database level.
+
+Checks include:
+
+- Identifying missing required values.
+- Detecting temperatures outside the expected range.
+- Checking for duplicate `source_id` values.
+- Identifying humidity values outside the 0–100% range.
+- Detecting negative wind speeds.
+- Identifying duplicate measurement timestamps.
+
+### 9. SQL Data Analysis
 
 Uses SQL queries to explore stored weather observations, including:
 
 - Selecting and filtering records.
-- Sorting observations.
-- Calculating average, minimum and maximum temperatures.
-- Identifying duplicate measurement timestamps.
+- Sorting observations by measurement time.
+- Calculating overall average and maximum temperatures.
 - Grouping observations by date.
+- Calculating daily average, minimum and maximum temperatures.
 
 ## Project Structure
 
@@ -135,11 +157,13 @@ weather-data-pipeline/
 │   └── query_weather.py
 ├── sql/
 │   └── analysis.sql
+├── logs/
+│   └── pipeline.log
 ├── .gitignore
 └── README.md
 ```
 
-**Note:** Data files, SQLite databases and local backups are generated locally and excluded from Git using `.gitignore`.
+**Note:** Data files, SQLite databases, local backups and log files are generated locally and excluded from Git using `.gitignore`.
 
 ## Getting Started
 
@@ -191,7 +215,7 @@ python3 scripts/transform_weather.py
 python3 scripts/load_weather.py
 ```
 
-**Run SQL analysis queries:**
+**Run SQL data quality checks and analysis:**
 
 ```bash
 python3 scripts/query_weather.py
@@ -207,9 +231,11 @@ Through this project, I have practised:
 - Implementing data validation and quality checks.
 - Managing historical datasets.
 - Working with relational databases and SQLite.
-- Writing SQL queries for data analysis.
+- Writing SQL queries for data analysis and aggregation.
 - Implementing incremental data loading.
 - Preventing duplicate records using unique identifiers.
+- Implementing application logging and error handling.
+- Monitoring pipeline execution.
 - Managing files and directories with Python.
 - Using Git and Linux command-line tools.
 
@@ -217,12 +243,12 @@ Through this project, I have practised:
 
 The project will be extended to explore additional Data Engineering technologies and practices:
 
-- dbt for data transformation, testing and documentation.
-- BigQuery for cloud data warehousing.
-- Google Cloud Platform integration.
-- Docker and Docker Compose.
-- CI/CD automation using GitHub Actions.
-- Automated data quality testing and logging.
+- **dbt** for data transformation, testing and documentation.
+- **BigQuery** for cloud data warehousing.
+- **Google Cloud Platform** integration.
+- **Docker and Docker Compose** for containerisation.
+- **CI/CD automation** using GitHub Actions.
+- Automated data quality testing.
 
 ## Data Source
 
