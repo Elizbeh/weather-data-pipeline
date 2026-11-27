@@ -1,0 +1,6 @@
+services:
+  weather-pipeline:
+    build: .
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
