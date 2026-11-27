@@ -2,7 +2,7 @@
 
 A Python-based Data Engineering project that extracts weather data from the Open-Meteo API, transforms and validates it, and loads historical observations into a SQLite database for analysis.
 
-The project also uses **dbt (Data Build Tool)** to transform structured data, implement data quality tests, generate documentation, perform incremental transformations and track historical changes using snapshots.
+The project also uses **dbt (Data Build Tool)** to build SQL transformations, implement data quality tests, generate documentation, process incremental data and track historical changes using snapshots.
 
 ## Project Overview
 
@@ -18,46 +18,46 @@ The project currently uses local tools and a SQLite database, keeping developmen
 
 ```text
               Open-Meteo API
-                     |
-                     v
-            Data Extraction
+                    |
+                    v
+             Data Extraction
                  (Python)
-                     |
-                     v
+                    |
+                    v
               Raw JSON Storage
-                     |
-                     v
+                    |
+                    v
            Data Transformation
-                     |
-                     v
+                    |
+                    v
               Data Validation
-                     |
-                     v
+                    |
+                    v
              Processed JSON
-                     |
-                     v
+                    |
+                    v
               SQLite Database
-              (weather.db)
-                     |
-                     v
+                (weather.db)
+                    |
+                    v
              dbt Transformations
-                     |
-          +----------+----------+
-          |          |          |
-          v          v          v
-       Staging   Incremental   Snapshots
-        Models     Models      (History)
-          |          |          |
-          +----------+----------+
-                     |
-                     v
-           Daily Weather Summary
-                     |
-                     v
+                    |
+          +---------+----------+
+          |         |          |
+          v         v          v
+       Staging  Incremental  Snapshots
+       Models     Models     (History)
+          |         |          |
+          +---------+----------+
+                    |
+                    v
+          Daily Weather Summary
+                    |
+                    v
           dbt Data Quality Tests
-                     |
-                     v
-           dbt Documentation
+                    |
+                    v
+             dbt Documentation
 ```
 
 ## Technologies Used
@@ -182,6 +182,8 @@ The model calculates:
 - Daily maximum temperature.
 - Daily average humidity.
 
+This model is materialized as a table and recalculates its results when dbt runs the model.
+
 ### 3. Incremental Models
 
 Implemented `int_weather_incremental` using dbt's incremental materialization.
@@ -195,6 +197,8 @@ The incremental model was tested by adding three new source records and verifyin
 
 A subsequent execution confirmed that the row count remained at 20.
 
+Unlike the daily summary model, the incremental model is designed to add new records without rebuilding the entire target table on every run.
+
 ### 4. Data Quality Testing with dbt
 
 Implemented dbt data tests to validate source data and transformed models.
@@ -206,7 +210,7 @@ Tests include:
 - Uniqueness and non-null checks on daily observation dates.
 - Validation of important analytical fields.
 
-Successfully executed dbt tests on the source, staging and analytical models.
+Successfully executed the dbt test suite with **8 tests passing**.
 
 ### 5. Historical Tracking with dbt Snapshots
 
@@ -249,29 +253,38 @@ weather-data-pipeline/
 │   ├── processed/
 │   │   └── weather_clean.json
 │   └── weather.db
+│
 ├── scripts/
 │   ├── extract_weather.py
 │   ├── transform_weather.py
 │   ├── load_weather.py
 │   └── query_weather.py
+│
 ├── sql/
 │   └── analysis.sql
+│
 ├── logs/
 │   └── pipeline.log
+│
 ├── weather_dbt/
 │   ├── models/
-│   │   ├── staging/
-│   │   │   ├── stg_weather_observations.sql
-│   │   │   ├── daily_weather_summary.sql
-│   │   │   └── int_weather_incremental.sql
-│   │   └── example/
+│   │   └── staging/
+│   │       ├── stg_weather_observations.sql
+│   │       ├── daily_weather_summary.sql
+│   │       ├── int_weather_incremental.sql
+│   │       ├── sources.yml
+│   │       └── schema.yml
+│   │
 │   ├── snapshots/
 │   │   └── weather_observations_snapshot.sql
+│   │
 │   ├── tests/
 │   ├── analyses/
 │   ├── macros/
+│   ├── seeds/
 │   ├── dbt_project.yml
 │   └── README.md
+│
 ├── .gitignore
 └── README.md
 ```
@@ -287,11 +300,14 @@ weather-data-pipeline/
 - Git
 - SQLite3
 - Linux or WSL2
+- uv (for the separate dbt environment)
+- Python 3.11 for dbt
 
 ### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Elizbeh/weather-data-pipeline.git
+
 cd weather-data-pipeline
 ```
 
@@ -299,6 +315,7 @@ cd weather-data-pipeline
 
 ```bash
 python3 -m venv .venv
+
 source .venv/bin/activate
 ```
 
@@ -340,11 +357,15 @@ python3 scripts/query_weather.py
 
 The dbt environment is maintained separately from the original Python environment.
 
+First, install `uv` using its official installation instructions.
+
 Install Python 3.11 and create a virtual environment:
 
 ```bash
 uv python install 3.11
+
 uv venv .venv-dbt --python 3.11
+
 source .venv-dbt/bin/activate
 ```
 
@@ -354,9 +375,11 @@ Install dbt and the SQLite adapter:
 uv pip install "dbt-core>=1.10,<1.11" "dbt-sqlite==1.10.0"
 ```
 
-Configure the SQLite connection in `~/.dbt/profiles.yml` to point to the local `data/weather.db` database.
+Configure the SQLite connection in `~/.dbt/profiles.yml` to point to your local `data/weather.db` database.
 
-The SQLite `crypto` extension from SQLean is also required for the MD5 functionality used by dbt snapshots.
+The SQLite `crypto` extension from SQLean is also required for the MD5 functionality used by dbt snapshots. Install the extension for your operating system and configure its absolute path in the dbt profile.
+
+The database path and extension path in your profile must match your own local environment.
 
 ### 6. Run dbt transformations and tests
 
@@ -364,6 +387,7 @@ Validate the project:
 
 ```bash
 dbt debug --project-dir weather_dbt
+
 dbt parse --project-dir weather_dbt
 ```
 
@@ -389,6 +413,7 @@ Generate and serve documentation:
 
 ```bash
 dbt docs generate --project-dir weather_dbt
+
 dbt docs serve --project-dir weather_dbt
 ```
 
