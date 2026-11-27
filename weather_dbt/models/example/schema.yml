@@ -1,0 +1,44 @@
+
+version: 2
+
+models:
+  - name: my_first_dbt_model
+    description: "A starter dbt model"
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        data_tests:
+          - unique
+          - not_null
+
+  - name: my_second_dbt_model
+    description: "A starter dbt model"
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_weather_observations
+    description: "Staging model for weather observations"
+    columns:
+      - name: source_id
+        description: "Unique identifier generated for each weather observation"
+        data_tests:
+          - unique
+          - not_null
+      - name: time
+        data_tests:
+          - not_null
+          
+  - name: daily_weather_summary
+    description: "Daily aggregated weather metrics"
+    columns:
+      - name: observation_date
+        data_tests:
+          - unique
+          - not_null
+      - name: avg_temperature
+        data_tests:
+          - not_null

@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: weather
+    schema: main
+    tables:
+      - name: weather_observations
+        columns:
+          - name: time
+            data_tests:
+              - not_null
+          - name: source_id
+            data_tests:
+              - unique
